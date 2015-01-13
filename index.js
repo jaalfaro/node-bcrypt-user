@@ -137,7 +137,8 @@ User.exists = exists;
  * @param {String, default: _default} [realm]  optional realm the user belongs to
  * @param {Function} cb  first parameter will be an error or null, second parameter
  *                       contains a boolean about whether the password is valid or
- *                       not.
+ *                       not, third parameter contains user object or null on error
+ *                       or on invalid password.
  */
 function verifyPassword(db, username, password, realm, cb) {
   if (typeof realm === 'function') {
@@ -154,9 +155,14 @@ function verifyPassword(db, username, password, realm, cb) {
   db.find(lookup, function(err, user) {
     if (err) { cb(err); return; }
 
-    if (!user) { cb(null, false); return; }
+    if (!user) { cb(null, false, null); return; }
 
-    bcrypt.compare(password, user.password, cb);
+    bcrypt.compare(password, user.password, function(err, res) {
+      if (err) { cb(err); return; }
+      if (res === true) { cb(null, true, user); return; }
+
+      cb(null, false, null);
+    });
   });
 }
 User.verifyPassword = verifyPassword;
@@ -201,7 +207,8 @@ User.setPassword = setPassword;
  * @param {String} password  the password to use
  * @param {String, default: _default} [realm]  optional realm the user belongs to
  * @param {Function} cb  first parameter will be either an error object or null on
- *                       success.
+ *                       success, second parameter will be either a user object or
+ *                       null on failure.
  */
 function register(db, username, password, realm, cb) {
   if (typeof realm === 'function') {
@@ -221,7 +228,11 @@ function register(db, username, password, realm, cb) {
     db.insert(user, function(err) {
       if (err) { cb(err); return; }
 
-      setPassword(db, username, password, realm, cb);
+      setPassword(db, username, password, realm, function(err) {
+        if (err) { cb(err); return; }
+
+        db.find(user, cb);
+      });
     });
   });
 }

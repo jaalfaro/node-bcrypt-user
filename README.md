@@ -33,7 +33,7 @@ Create a new user named "foo" with the password "secr3t".
     };
 
     var user = new User(res, 'foo');
-    user.register('secr3t', function(err) {
+    user.register('secr3t', function(err, usr) {
       if (err) { throw err; }
       console.log('user created');
     });
@@ -43,7 +43,7 @@ Check if the password "raboof" is correct for user "foo" in the realm "bar".
     // same setup as previous example
 
     var user = new User(res, 'foo', 'bar');
-    user.verifyPassword('raboof', function(err, correct) {
+    user.verifyPassword('raboof', function(err, correct, usr) {
       if (err) { throw err; }
       if (correct === true) {
         console.log('password correct');
@@ -80,16 +80,16 @@ Create a new user named "foo" with the password "secr3t".
       },
     };
 
-    User.register(res, 'foo', 'secr3t', function(err) {
+    User.register(res, 'foo', 'secr3t', function(err, usr) {
       if (err) { throw err; }
-      console.log('user created');
+      console.log('user created', usr);
     });
 
 Check if the password "raboof" is correct for user "foo" in the realm "bar".
 
     // same setup as previous example
 
-    User.verifyPassword(res, 'foo', 'raboof', 'bar', function(err, correct) {
+    User.verifyPassword(res, 'foo', 'raboof', 'bar', function(err, correct, usr) {
       if (err) { throw err; }
       if (correct === true) {
         console.log('password correct');
@@ -147,7 +147,8 @@ Return whether or not the user already exists in the database.
 #### user.verifyPassword(password, cb)
 * password {String} the password to verify
 * cb {Function} first parameter will be an error or null, second parameter
-  contains a boolean about whether the password is valid or not.
+  contains a boolean about whether the password is valid or not, third parameter
+  contains user object or null on error or on invalid password.
 
 Verify if the given password is valid.
 
@@ -161,7 +162,8 @@ Note: the user has to exist in the database.
 
 #### user.register(password, cb)
 * password {String} the password to use, at least 6 characters
-* cb {Function} first parameter will be either an error object or null on success.
+* cb {Function} first parameter will be either an error object or null on success,
+  second parameter will be either a user object or null on failure.
 
 Register a new user with a certain password.
 
