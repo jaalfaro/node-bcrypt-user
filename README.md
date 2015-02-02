@@ -4,8 +4,7 @@ Create user accounts, verify and update passwords using bcrypt. The library can 
 used in a stateless way or in an object oriented way.
 
 ## Examples
-### object oriented
-
+### Creating a new user
 Create a new user named "foo" with the password "secr3t".
 
     var User = require('bcrypt-user');
@@ -32,70 +31,27 @@ Create a new user named "foo" with the password "secr3t".
       },
     };
 
-    var user = new User(res, 'foo');
-    user.register('secr3t', function(err, usr) {
+    User.register(res, 'foo', 'secr3t', function(err, user) {
       if (err) { throw err; }
-      console.log('user created');
+      console.log('user created', user);
     });
 
-Check if the password "raboof" is correct for user "foo" in the realm "bar".
+### Finding and verifying a user
+Find a user names "foo" and verify password "raboof".
 
     // same setup as previous example
 
-    var user = new User(res, 'foo', 'bar');
-    user.verifyPassword('raboof', function(err, correct, usr) {
+    User.find(res, 'foo', function(err, user){
       if (err) { throw err; }
-      if (correct === true) {
-        console.log('password correct');
-      } else {
-        console.log('password incorrect');
-      }
-    });
 
-### stateless
-
-Create a new user named "foo" with the password "secr3t".
-
-    var User = require('bcrypt-user');
-
-    // setup a resolver
-    var res = {
-      insert: function(user, cb) {
-        // insert and call back with error or null
-        process.nextTick(function() {
-          cb(null);
-        });
-      },
-      updateHash: function(lookup, hash, cb) {
-        // update and call back with error or null
-        process.nextTick(function() {
-          cb(null);
-        });
-      },
-      find: function(lookup, cb) {
-        // update and call back with error or null, and user or null
-        process.nextTick(function() {
-          cb(err, user);
-        });
-      },
-    };
-
-    User.register(res, 'foo', 'secr3t', function(err, usr) {
-      if (err) { throw err; }
-      console.log('user created', usr);
-    });
-
-Check if the password "raboof" is correct for user "foo" in the realm "bar".
-
-    // same setup as previous example
-
-    User.verifyPassword(res, 'foo', 'raboof', 'bar', function(err, correct, usr) {
-      if (err) { throw err; }
-      if (correct === true) {
-        console.log('password correct');
-      } else {
-        console.log('password incorrect');
-      }
+      if (user.verifyPassword('raboof', function(err, correct) {
+        if (err) { throw err; }
+        if (correct === true) {
+          console.log('password correct');
+        } else {
+          console.log('password incorrect');
+        }
+      });
     });
 
 ## Installation
