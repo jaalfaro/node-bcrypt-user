@@ -144,6 +144,12 @@ Three functions db must support:
 
 Return whether or not the user already exists in the database.
 
+#### user.find(cb)
+* cb {Function} first parameter will be an error or null, second parameter
+  contains a user or null if not found.
+
+Return a user from the database.
+
 #### user.verifyPassword(password, cb)
 * password {String} the password to verify
 * cb {Function} first parameter will be an error or null, second parameter
@@ -174,6 +180,7 @@ where the user db, the username and optionally the realm are given at each
 function invocation.
 
 #### User.exists(db, username, [realm], cb)
+#### User.find(db, username, [realm], cb)
 #### User.verifyPassword(db, username, password, [realm], cb)
 #### User.setPassword(db, username, password, [realm], cb)
 #### User.register(db, username, password, [realm], cb)

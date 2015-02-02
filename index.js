@@ -124,6 +124,34 @@ function exists(db, username, realm, cb) {
 User.exists = exists;
 
 /**
+ * Find a user in the database.
+ *
+ * @param {Object} db  the database that contains all user accounts
+ * @param {String} username  the username to check
+ * @param {String, default: _default} [realm]  optional realm the user belongs to
+ * @param {Function} cb  first parameter will be an error or null, second parameter
+ *                       contains the user or null if not found.
+ */
+function find(db, username, realm, cb) {
+  if (typeof realm === 'function') {
+    cb = realm;
+    realm = '_default';
+  }
+  _checkAllWithPassword(db, username, 'xxxxxx', realm, cb);
+
+  var lookup = {
+    realm: realm,
+    username: username
+  };
+
+  db.find(lookup, function(err, user) {
+    if (err) { cb(err); return; }
+    cb(null, user);
+  });
+}
+User.find = find;
+
+/**
  * Verify if the given password is valid for the given username.
  *
  * @param {Object} db  the database that contains all user accounts
@@ -249,6 +277,18 @@ User.prototype.exists = function(cb) {
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
   exists(this._db, this._username, this._realm, cb);
+};
+
+/**
+ * Wrapper around User.find.
+ *
+ * @param {Function} cb  first parameter will be an error or null, second parameter
+ *                       contains a user object or null if not found.
+ */
+User.prototype.find = function(cb) {
+  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
+
+  find(this._db, this._username, this._realm, cb);
 };
 
 /**

@@ -185,6 +185,42 @@ describe('User', function () {
       });
     });
 
+    describe('find', function () {
+      it('should require db to be an object', function() {
+        (function() { User.find(''); }).should.throw('db must be an object');
+      });
+      // assume all checks are handled by the previously tested User._checkAllWithPassword
+
+      it('should find that the user does not exist', function(done) {
+        User.find(db, 'qux', function(err, user) {
+          if (err) { throw err; }
+          should.strictEqual(user, null);
+          done();
+        });
+      });
+
+      it('needs a user to exist', function(done) {
+        User.register(db, 'qux', 'password', done);
+      });
+
+      it('should find the user', function(done) {
+        User.find(db, 'qux', function(err, user) {
+          if (err) { throw err; }
+          should.strictEqual(user.username, 'qux');
+          should.strictEqual(user.realm, '_default');
+          done();
+        });
+      });
+
+      it('should find that the user does not exist in other realm', function(done) {
+        User.find(db, 'qux', 'otherRealm', function(err, user) {
+          if (err) { throw err; }
+          should.strictEqual(user, null);
+          done();
+        });
+      });
+    });
+
     describe('verifyPassword', function () {
       it('should require db to be an object', function() {
         (function() { User.verifyPassword(''); }).should.throw('db must be an object');
