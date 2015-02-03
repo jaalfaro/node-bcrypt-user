@@ -232,20 +232,26 @@ describe('User', function () {
       });
 
       it('should find that the password is invalid', function(done) {
-        User.verifyPassword(db, 'foo', 'secret', 'verifyPasswordRealm', function(err, valid, user) {
+        User.verifyPassword(db, 'foo', 'secret', 'verifyPasswordRealm', function(err, valid) {
           if (err) { throw err; }
           should.strictEqual(valid, false);
-          should.strictEqual(user, null);
           done();
         });
       });
 
       it('should find that the password is valid', function(done) {
+        User.verifyPassword(db, 'foo', 'secr3t', 'verifyPasswordRealm', function(err, valid) {
+          if (err) { throw err; }
+          should.strictEqual(valid, true);
+          done();
+        });
+      });
+
+      it('should not return the user when password is valid', function(done) {
         User.verifyPassword(db, 'foo', 'secr3t', 'verifyPasswordRealm', function(err, valid, user) {
           if (err) { throw err; }
           should.strictEqual(valid, true);
-          should.strictEqual(user.realm, 'verifyPasswordRealm');
-          should.strictEqual(user.username, 'foo');
+          should.strictEqual(user, undefined);
           done();
         });
       });
@@ -260,10 +266,9 @@ describe('User', function () {
       });
 
       it('should find that the password is invalid for users in non-existant realms', function(done) {
-        User.verifyPassword(db, 'foo', 'secr3t', 'verifyPasswordRealm2', function(err, valid, user) {
+        User.verifyPassword(db, 'foo', 'secr3t', 'verifyPasswordRealm2', function(err, valid) {
           if (err) { throw err; }
           should.strictEqual(valid, false);
-          should.strictEqual(user, null);
           done();
         });
       });

@@ -29,6 +29,7 @@ var bcrypt = require('bcrypt');
  * @return {undefined}
  */
 function _checkAllWithPassword(db, username, password, realm, cb) {
+  /*jshint maxcomplexity:11*/
   if (typeof db !== 'object') { throw new TypeError('db must be an object'); }
   if (typeof username !== 'string') { throw new TypeError('username must be a string'); }
   if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
@@ -155,8 +156,7 @@ User.exists = exists;
  * @param {String, default: _default} [realm]  optional realm the user belongs to
  * @param {Function} cb  first parameter will be an error or null, second parameter
  *                       contains a boolean about whether the password is valid or
- *                       not, third parameter contains user object or null on error
- *                       or on invalid password.
+ *                       not.
  */
 function verifyPassword(db, username, password, realm, cb) {
   if (typeof realm === 'function') {
@@ -177,9 +177,9 @@ function verifyPassword(db, username, password, realm, cb) {
 
     bcrypt.compare(password, user.password, function(err, res) {
       if (err) { cb(err); return; }
-      if (res === true) { cb(null, true, user); return; }
+      if (res === true) { cb(null, true); return; }
 
-      cb(null, false, null);
+      cb(null, false);
     });
   });
 }

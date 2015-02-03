@@ -109,8 +109,7 @@ Return a user from the database.
 #### user.verifyPassword(password, cb)
 * password {String} the password to verify
 * cb {Function} first parameter will be an error or null, second parameter
-  contains a boolean about whether the password is valid or not, third parameter
-  contains user object or null on error or on invalid password.
+  contains a boolean about whether the password is valid or not.
 
 Verify if the given password is valid.
 
