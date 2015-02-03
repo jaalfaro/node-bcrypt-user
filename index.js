@@ -173,7 +173,7 @@ function verifyPassword(db, username, password, realm, cb) {
   db.find(lookup, function(err, user) {
     if (err) { cb(err); return; }
 
-    if (!user) { cb(null, false, null); return; }
+    if (!user) { cb(null, false); return; }
 
     bcrypt.compare(password, user.password, function(err, res) {
       if (err) { cb(err); return; }
