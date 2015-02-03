@@ -1,42 +1,46 @@
 # bcrypt-user
 
-Create user accounts, verify and update passwords using bcrypt. The library can be
-used in a stateless way or in an object oriented way.
+Abstract library to create, update and authenticate users using bcrypt.
 
 ## Examples
-### Creating a new user
+### Create a new user
 Create a new user named "foo" with the password "secr3t".
 
     var User = require('bcrypt-user');
 
-    // setup a user database resolver
+    // setup a user database resolver, this is a custom storage engine
+    // empty stub example:
     var res = {
       insert: function(user, cb) {
         // insert and call back with error or null
         process.nextTick(function() {
+          // do some stuff
           cb(null);
         });
       },
       updateHash: function(lookup, hash, cb) {
         // update and call back with error or null
         process.nextTick(function() {
+          // do some stuff
           cb(null);
         });
       },
       find: function(lookup, cb) {
         // update and call back with error or null, and user or null
         process.nextTick(function() {
+          // do some stuff
           cb(err, user);
         });
       },
     };
 
+    // then use
     User.register(res, 'foo', 'secr3t', function(err, user) {
       if (err) { throw err; }
       console.log('user created', user);
     });
 
-### Finding and verifying a user
+### Find and verify a user
 Find a user names "foo" and verify password "raboof".
 
     // same setup as previous example
