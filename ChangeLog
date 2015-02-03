@@ -1,3 +1,9 @@
+2015.02.03, Version 1.0.0
+
+* update readme
+* removed user from cb verifyPassword (sanderbaas)
+
+
 2015.02.03, Version 0.2.0
 
 * added new examples to README.md (sanderbaas)
