@@ -85,185 +85,48 @@ function User(db, username, realm) {
   this._db = db;
   this._realm = realm;
   this._username = username;
+
+  this.protectedProps = {
+    _db: true,
+    _realm: true,
+    _username: true
+  };
 }
 module.exports = User;
 
 User._checkAllWithPassword = _checkAllWithPassword;
 
-/////////////////////////////
-//// Stateless functions ////
-/////////////////////////////
-
-
 /**
  * Find a user in the database.
  *
- * @param {Object} db  the database that contains all user accounts
- * @param {String} username  the username to check
- * @param {String, default: _default} [realm]  optional realm the user belongs to
  * @param {Function} cb  first parameter will be an error or null, second parameter
- *                       contains the user or null if not found.
+ *                       will be true when user is found, otherwise false.
  */
-function find(db, username, realm, cb) {
-  if (typeof realm === 'function') {
-    cb = realm;
-    realm = '_default';
-  }
-  _checkAllWithPassword(db, username, 'xxxxxx', realm, cb);
+User.prototype.find = function(cb) {
+  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
+  var that = this;
   var lookup = {
-    realm: realm,
-    username: username
+    realm: that._realm,
+    username: that._username
   };
 
-  db.find(lookup, function(err, user) {
-    if (err) { cb(err); return; }
-    cb(null, user);
+  this._db.find(lookup, function(err, user) {
+    if (err) { cb(err, false); return; }
+
+    if (user) {
+      Object.keys(user).forEach(function(prop) {
+        if (!that.protectedProps[prop]) { that[prop] = user[prop]; }
+      });
+      cb(null, true);
+      return;
+    }
+    cb(null, false);
   });
-}
-User.find = find;
+};
 
 /**
  * Return whether or not the user already exists in the database.
- *
- * @param {Object} db  the database that contains all user accounts
- * @param {String} username  the username to check
- * @param {String, default: _default} [realm]  optional realm the user belongs to
- * @param {Function} cb  first parameter will be an error or null, second parameter
- *                       contains a boolean about whether this user exists or not.
- */
-function exists(db, username, realm, cb) {
-  if (typeof realm === 'function') {
-    cb = realm;
-    realm = '_default';
-  }
-  _checkAllWithPassword(db, username, 'xxxxxx', realm, cb);
-
-  find(db, username, realm, function(err, user){
-    if (err) { cb(err); return; }
-    if (user) { cb(null, true); return; }
-    cb(null, false);
-  });
-}
-User.exists = exists;
-
-/**
- * Verify if the given password is valid for the given username.
- *
- * @param {Object} db  the database that contains all user accounts
- * @param {String} username  the username to use
- * @param {String} password  the password to verify
- * @param {String, default: _default} [realm]  optional realm the user belongs to
- * @param {Function} cb  first parameter will be an error or null, second parameter
- *                       contains a boolean about whether the password is valid or
- *                       not.
- */
-function verifyPassword(db, username, password, realm, cb) {
-  if (typeof realm === 'function') {
-    cb = realm;
-    realm = '_default';
-  }
-  _checkAllWithPassword(db, username, password, realm, cb);
-
-  var lookup = {
-    realm: realm,
-    username: username
-  };
-
-  db.find(lookup, function(err, user) {
-    if (err) { cb(err); return; }
-
-    if (!user) { cb(null, false); return; }
-
-    bcrypt.compare(password, user.password, function(err, res) {
-      if (err) { cb(err); return; }
-      if (res === true) { cb(null, true); return; }
-
-      cb(null, false);
-    });
-  });
-}
-User.verifyPassword = verifyPassword;
-
-/**
- * Update the password for the given username.
- *
- * Note: the user has to exist in the database.
- *
- * @param {Object} db  the database that contains all user accounts
- * @param {String} username  the username to use
- * @param {String} password  the password to use, at least 6 characters
- * @param {String, default: _default} [realm]  optional realm the user belongs to
- * @param {Function} cb  first parameter will be either an error object or null on
- *                       success.
- */
-function setPassword(db, username, password, realm, cb) {
-  if (typeof realm === 'function') {
-    cb = realm;
-    realm = '_default';
-  }
-  _checkAllWithPassword(db, username, password, realm, cb);
-
-  bcrypt.hash(password, 10, function(err, hash) {
-    if (err) { cb(err); return; }
-
-    var lookup = {
-      realm: realm,
-      username: username
-    };
-
-    db.updateHash(lookup, hash, cb);
-  });
-}
-User.setPassword = setPassword;
-
-/**
- * Register a new user with a certain password.
- *
- * @param {Object} db  the database that contains all user accounts
- * @param {String} username  the username to use
- * @param {String} password  the password to use
- * @param {String, default: _default} [realm]  optional realm the user belongs to
- * @param {Function} cb  first parameter will be either an error object or null on
- *                       success, second parameter will be either a user object or
- *                       null on failure.
- */
-function register(db, username, password, realm, cb) {
-  if (typeof realm === 'function') {
-    cb = realm;
-    realm = '_default';
-  }
-  _checkAllWithPassword(db, username, password, realm, cb);
-
-  var user = {
-    realm: realm,
-    username: username
-  };
-
-  exists(db, username, realm, function(err, doesExist) {
-    if (doesExist) { cb(new Error('username already exists')); return; }
-
-    db.insert(user, function(err) {
-      if (err) { cb(err); return; }
-
-      setPassword(db, username, password, realm, function(err) {
-        if (err) { cb(err); return; }
-
-        db.find(user, cb);
-      });
-    });
-  });
-}
-User.register = register;
-
-
-/////////////////////////////////////////
-//// Object methods of each function ////
-/////////////////////////////////////////
-
-
-/**
- * Wrapper around User.exists.
  *
  * @param {Function} cb  first parameter will be an error or null, second parameter
  *                       contains a boolean about whether this user exists.
@@ -271,23 +134,21 @@ User.register = register;
 User.prototype.exists = function(cb) {
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
-  exists(this._db, this._username, this._realm, cb);
+  var that = this;
+  var lookup = {
+    realm: that._realm,
+    username: that._username
+  };
+
+  this._db.find(lookup, function(err, user){
+    if (err) { cb(err); return; }
+    if (user) { cb(null, true); return; }
+    cb(null, false);
+  });
 };
 
 /**
- * Wrapper around User.find.
- *
- * @param {Function} cb  first parameter will be an error or null, second parameter
- *                       contains a user object or null if not found.
- */
-User.prototype.find = function(cb) {
-  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
-
-  find(this._db, this._username, this._realm, cb);
-};
-
-/**
- * Wrapper around User.verifyPassword.
+ * Verify if the given password is valid.
  *
  * @param {String} password  the password to verify
  * @param {Function} cb  first parameter will be an error or null, second parameter
@@ -298,11 +159,23 @@ User.prototype.verifyPassword = function(password, cb) {
   if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
-  verifyPassword(this._db, this._username, password, this._realm, cb);
+  var that = this;
+  that.find(function(err, found) {
+    if (err) { cb(err); return; }
+
+    if (!found) { cb(null, false); return; }
+
+    bcrypt.compare(password, that.password, function(err, res) {
+      if (err) { cb(err); return; }
+      if (res === true) { cb(null, true); return; }
+
+      cb(null, false);
+    });
+  });
 };
 
 /**
- * Wrapper around User.setPassword.
+ * Update the password for the given username.
  *
  * Note: the user has to exist in the database.
  *
@@ -314,11 +187,21 @@ User.prototype.setPassword = function(password, cb) {
   if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
-  setPassword(this._db, this._username, password, this._realm, cb);
+  var that = this;
+  bcrypt.hash(password, 10, function(err, hash) {
+    if (err) { cb(err); return; }
+
+    var lookup = {
+      realm: that._realm,
+      username: that._username
+    };
+
+    that._db.updateHash(lookup, hash, cb);
+  });
 };
 
 /**
- * Wrapper around User.register.
+ * Register a new user with a certain password.
  *
  * @param {String} password  the password to use
  * @param {Function} cb  first parameter will be either an error object or null on
@@ -328,5 +211,23 @@ User.prototype.register = function(password, cb) {
   if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
-  register(this._db, this._username, password, this._realm, cb);
+  var that = this;
+  var user = {
+    realm: that._realm,
+    username: that._username
+  };
+
+  that.exists(function(err, doesExist) {
+    if (doesExist) { cb(new Error('username already exists')); return; }
+
+    that._db.insert(user, function(err) {
+      if (err) { cb(err); return; }
+
+      that.setPassword(password, function(err){
+        if (err) { cb(err); return; }
+
+        that.find(cb);
+      });
+    });
+  });
 };

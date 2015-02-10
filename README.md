@@ -35,9 +35,10 @@ Create a new user named "foo" with the password "secr3t".
     };
 
     // then use
-    User.register(res, 'foo', 'secr3t', function(err, user) {
+    var user = new User(res, 'foo');
+    user.register('secr3t', function(err) {
       if (err) { throw err; }
-      console.log('user created', user);
+      console.log('user created');
     });
 
 ### Find and verify a user
@@ -45,17 +46,14 @@ Find a user names "foo" and verify password "raboof".
 
     // same setup as previous example
 
-    User.find(res, 'foo', function(err, user){
+    var user = new User(res, 'foo');
+    user.verifyPassword('raboof', function(err, correct) {
       if (err) { throw err; }
-
-      if (user.verifyPassword('raboof', function(err, correct) {
-        if (err) { throw err; }
-        if (correct === true) {
-          console.log('password correct');
-        } else {
-          console.log('password incorrect');
-        }
-      });
+      if (correct === true) {
+        console.log('password correct');
+      } else {
+        console.log('password incorrect');
+      }
     });
 
 ## Installation
@@ -98,17 +96,17 @@ Three functions db must support:
       callback {Function} should call back with:
         err {Object}     error object or null
 
+#### user.find(cb)
+* cb {Function} first parameter will be an error or null, second parameter
+  will be true when user is found, otherwise false.
+
+Return a user from the database.
+
 #### user.exists(cb)
 * cb {Function} first parameter will be an error or null, second parameter
   contains a boolean about whether this user exists or not.
 
 Return whether or not the user already exists in the database.
-
-#### user.find(cb)
-* cb {Function} first parameter will be an error or null, second parameter
-  contains a user or null if not found.
-
-Return a user from the database.
 
 #### user.verifyPassword(password, cb)
 * password {String} the password to verify
@@ -127,22 +125,9 @@ Note: the user has to exist in the database.
 
 #### user.register(password, cb)
 * password {String} the password to use, at least 6 characters
-* cb {Function} first parameter will be either an error object or null on success,
-  second parameter will be either a user object or null on failure.
+* cb {Function} first parameter will be either an error object or null on success.
 
 Register a new user with a certain password.
-
-### stateless
-
-Furthermore a stateless variant of each object oriented function is available
-where the user db, the username and optionally the realm are given at each
-function invocation.
-
-#### User.exists(db, username, [realm], cb)
-#### User.find(db, username, [realm], cb)
-#### User.verifyPassword(db, username, password, [realm], cb)
-#### User.setPassword(db, username, password, [realm], cb)
-#### User.register(db, username, password, [realm], cb)
 
 ## Tests
 

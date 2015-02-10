@@ -113,267 +113,134 @@ describe('User', function () {
     });
   });
 
-  describe('stateless', function () {
-    describe('register', function () {
-      it('should require db to be an object', function() {
-        (function() { User.register(''); }).should.throw('db must be an object');
-      });
-      // assume all checks are handled by the previously tested User._checkAllWithPassword
+  describe('constructor', function () {
+    it('should require db to be an object', function() {
+      (function() { var user = new User(''); return user; }).should.throw('db must be an object');
+    });
+    // assume all checks are handled by the previously tested User._checkAllWithPassword
+  });
 
-      it('should register', function(done) {
-        User.register(db, 'bar', 'password', function(err) {
-          should.strictEqual(err, null);
-          findOne({ username: 'bar', realm: '_default' }, function(err, user) {
-            should.strictEqual(err, null);
-            should.strictEqual(user.realm, '_default');
-            should.strictEqual(user.username, 'bar');
+  describe('register', function () {
+    it('should register', function(done) {
+      var user = new User(db, 'baz', 'ooregister');
+      user.register('p4ssword', function(err) {
+        should.strictEqual(err, null);
+        should.strictEqual(user.realm, 'ooregister');
+        should.strictEqual(user.username, 'baz');
 
-            // bcrypt password example: '$2a$10$VnQeImV1DVqtQ7hXa.Sgsug9cCLVa65W4jO09w.I5tXcuYRbRVevu'
-            should.strictEqual(user.password.length, 60);
-            user.password.should.match(/^\$2a\$10\$/);
+        // bcrypt password example: '$2a$10$VnQeImV1DVqtQ7hXa.Sgsug9cCLVa65W4jO09w.I5tXcuYRbRVevu'
+        should.strictEqual(user.password.length, 60);
+        user.password.should.match(/^\$2a\$10\$/);
 
-            bcrypt.compare('password', user.password, function(err, res) {
-              if (err) { throw err; }
-              if (res !== true) { throw new Error('passwords don\'t match'); }
-              done();
-            });
-          });
-        });
-      });
-
-      it('should fail if username already exists', function(done) {
-        User.register(db, 'bar', 'password', function(err, user) {
-          should.strictEqual(user, undefined);
-          should.strictEqual(err.message, 'username already exists');
+        bcrypt.compare('p4ssword', user.password, function(err, res) {
+          if (err) { throw err; }
+          if (res !== true) { throw new Error('passwords don\'t match'); }
           done();
         });
       });
     });
 
-    describe('exists', function () {
-      it('should require db to be an object', function() {
-        (function() { User.exists(''); }).should.throw('db must be an object');
+    it('should fail if username already exists', function(done) {
+      var user = new User(db, 'baz', 'ooregister');
+      user.register('password', function(err, user) {
+        should.strictEqual(user, undefined);
+        should.strictEqual(err.message, 'username already exists');
+        done();
       });
-      // assume all checks are handled by the previously tested User._checkAllWithPassword
+    });
+  });
 
-      it('should find that the user does not exist', function(done) {
-        User.exists(db, 'foo', function(err, doesExist) {
+  describe('find', function () {
+    it('should find that the user does not exist', function(done) {
+      var user = new User(db, 'qux');
+      user.find(function(err, found) {
+        if (err) { throw err; }
+        should.strictEqual(found, false);
+        done();
+      });
+    });
+
+    it('needs a user to exist', function(done) {
+      var user = new User(db, 'qux');
+      user.register('password', done);
+    });
+
+    it('should find the user', function(done) {
+      var user = new User(db, 'qux');
+      user.find(function(err, found) {
+        if (err) { throw err; }
+        should.strictEqual(found, true);
+        should.strictEqual(user.username, 'qux');
+        should.strictEqual(user.realm, '_default');
+        done();
+      });
+    });
+
+    it('should find that the user does not exist in other realm', function(done) {
+      var user = new User(db, 'qux', 'otherRealm');
+      user.find(function(err, found) {
+        if (err) { throw err; }
+        should.strictEqual(found, false);
+        done();
+      });
+    });
+  });
+
+  describe('exists', function () {
+    // use previously created user
+    it('should find that the user does exist', function(done) {
+      var user = new User(db, 'baz', 'ooregister');
+      user.exists(function(err, doesExist) {
+        if (err) { throw err; }
+        should.strictEqual(doesExist, true);
+        done();
+      });
+    });
+
+    it('should find that the user does not exist', function(done) {
+      var user = new User(db, 'bay', 'ooregister');
+      user.find(function(err) {
+        if (err) { throw err; }
+        user.exists(function(err, doesExist) {
           if (err) { throw err; }
           should.strictEqual(doesExist, false);
           done();
         });
       });
+    });
 
-      it('needs a user to exist', function(done) {
-        User.register(db, 'foo', 'password', done);
-      });
-
-      it('should find that the user does exist', function(done) {
-        User.exists(db, 'foo', function(err, doesExist) {
-          if (err) { throw err; }
-          should.strictEqual(doesExist, true);
-          done();
-        });
-      });
-
-      it('should find that the user does exist in this realm', function(done) {
-        User.exists(db, 'foo', 'otherRealm', function(err, doesExist) {
+    it('should find that the user does exist in this realm', function(done) {
+      var user = new User(db, 'baz', 'ooregister2');
+      user.find(function(err) {
+        if (err) { throw err; }
+        user.exists(function(err, doesExist) {
           if (err) { throw err; }
           should.strictEqual(doesExist, false);
-          done();
-        });
-      });
-    });
-
-    describe('find', function () {
-      it('should require db to be an object', function() {
-        (function() { User.find(''); }).should.throw('db must be an object');
-      });
-      // assume all checks are handled by the previously tested User._checkAllWithPassword
-
-      it('should find that the user does not exist', function(done) {
-        User.find(db, 'qux', function(err, user) {
-          if (err) { throw err; }
-          should.strictEqual(user, null);
-          done();
-        });
-      });
-
-      it('needs a user to exist', function(done) {
-        User.register(db, 'qux', 'password', done);
-      });
-
-      it('should find the user', function(done) {
-        User.find(db, 'qux', function(err, user) {
-          if (err) { throw err; }
-          should.strictEqual(user.username, 'qux');
-          should.strictEqual(user.realm, '_default');
-          done();
-        });
-      });
-
-      it('should find that the user does not exist in other realm', function(done) {
-        User.find(db, 'qux', 'otherRealm', function(err, user) {
-          if (err) { throw err; }
-          should.strictEqual(user, null);
-          done();
-        });
-      });
-    });
-
-    describe('verifyPassword', function () {
-      it('should require db to be an object', function() {
-        (function() { User.verifyPassword(''); }).should.throw('db must be an object');
-      });
-      // assume all checks are handled by the previously tested User._checkAllWithPassword
-
-      it('needs a user to exist', function(done) {
-        User.register(db, 'foo', 'secr3t', 'verifyPasswordRealm', done);
-      });
-
-      it('should find that the password is invalid', function(done) {
-        User.verifyPassword(db, 'foo', 'secret', 'verifyPasswordRealm', function(err, valid) {
-          if (err) { throw err; }
-          should.strictEqual(valid, false);
-          done();
-        });
-      });
-
-      it('should find that the password is valid', function(done) {
-        User.verifyPassword(db, 'foo', 'secr3t', 'verifyPasswordRealm', function(err, valid) {
-          if (err) { throw err; }
-          should.strictEqual(valid, true);
-          done();
-        });
-      });
-
-      it('should not return the user when password is valid', function(done) {
-        User.verifyPassword(db, 'foo', 'secr3t', 'verifyPasswordRealm', function(err, valid) {
-          if (err) { throw err; }
-          should.strictEqual(valid, true);
-          done();
-        });
-      });
-
-      it('should find that the password is invalid for non-existant users', function(done) {
-        User.verifyPassword(db, 'foo2', 'secr3t', function(err, valid) {
-          if (err) { throw err; }
-          should.strictEqual(valid, false);
-          done();
-        });
-      });
-
-      it('should find that the password is invalid for users in non-existant realms', function(done) {
-        User.verifyPassword(db, 'foo', 'secr3t', 'verifyPasswordRealm2', function(err, valid) {
-          if (err) { throw err; }
-          should.strictEqual(valid, false);
-          done();
-        });
-      });
-    });
-
-    describe('setPassword', function () {
-      it('should require db to be an object', function() {
-        (function() { User.setPassword(''); }).should.throw('db must be an object');
-      });
-      // assume all checks are handled by the previously tested User._checkAllWithPassword
-
-      it('needs a user to exist', function(done) {
-        User.register(db, 'foo', 'secr3t', 'setPasswordRealm', done);
-      });
-
-      it('should update the password', function(done) {
-        User.setPassword(db, 'foo', 'secret', 'setPasswordRealm', function(err) {
-          if (err) { throw err; }
-          findOne({ username: 'foo', realm: 'setPasswordRealm' }, function(err, user) {
-            should.strictEqual(err, null);
-            should.strictEqual(user.realm, 'setPasswordRealm');
-            should.strictEqual(user.username, 'foo');
-
-            // bcrypt password example: '$2a$10$VnQeImV1DVqtQ7hXa.Sgsug9cCLVa65W4jO09w.I5tXcuYRbRVevu'
-            should.strictEqual(user.password.length, 60);
-            user.password.should.match(/^\$2a\$10\$/);
-
-            bcrypt.compare('secret', user.password, function(err, res) {
-              if (err) { throw err; }
-              if (res !== true) { throw new Error('passwords don\'t match'); }
-              done();
-            });
-          });
-        });
-      });
-
-      it('should require that the user exists in the given realm (wrong realm)', function(done) {
-        User.setPassword(db, 'foo', 'secret', 'setPasswordRealm2', function(err) {
-          should.strictEqual(err.message, 'failed to update password');
-          done();
-        });
-      });
-
-      it('should require that the user exists in the given realm (wrong username)', function(done) {
-        User.setPassword(db, 'baz', 'secret', 'setPasswordRealm', function(err) {
-          should.strictEqual(err.message, 'failed to update password');
           done();
         });
       });
     });
   });
 
-  describe('object oriented', function () {
-    describe('constructor', function () {
-      it('should require db to be an object', function() {
-        (function() { var user = new User(''); return user; }).should.throw('db must be an object');
-      });
-      // assume all checks are handled by the previously tested User._checkAllWithPassword
-    });
+  describe('verifyPassword', function () {
+    // use previously created user
 
-    describe('register', function () {
-      it('should register', function(done) {
-        var user = new User(db, 'baz', 'ooregister');
-        user.register('p4ssword', function(err, usr) {
-          should.strictEqual(err, null);
-          should.strictEqual(usr.realm, 'ooregister');
-          should.strictEqual(usr.username, 'baz');
-
-          // bcrypt password example: '$2a$10$VnQeImV1DVqtQ7hXa.Sgsug9cCLVa65W4jO09w.I5tXcuYRbRVevu'
-          should.strictEqual(usr.password.length, 60);
-          usr.password.should.match(/^\$2a\$10\$/);
-
-          bcrypt.compare('p4ssword', usr.password, function(err, res) {
-            if (err) { throw err; }
-            if (res !== true) { throw new Error('passwords don\'t match'); }
-            done();
-          });
-        });
-      });
-    });
-
-    describe('exists', function () {
-      // use previously created user
-      it('should find that the user does exist', function(done) {
-        var user = new User(db, 'baz', 'ooregister');
-        user.exists(function(err, doesExist) {
-          if (err) { throw err; }
-          should.strictEqual(doesExist, true);
-          done();
-        });
-      });
-    });
-
-    describe('verifyPassword', function () {
-      // use previously created user
-
-      it('should find that the password is invalid', function(done) {
-        var user = new User(db, 'baz', 'ooregister');
+    it('should find that the password is invalid', function(done) {
+      var user = new User(db, 'baz', 'ooregister');
+      user.find(function(err) {
+        if (err) { throw err; }
         user.verifyPassword('secret', function(err, correct) {
           if (err) { throw err; }
           should.strictEqual(correct, false);
           done();
         });
       });
+    });
 
-      it('should find that the password is valid', function(done) {
-        var user = new User(db, 'baz', 'ooregister');
+    it('should find that the password is valid', function(done) {
+      var user = new User(db, 'baz', 'ooregister');
+      user.find(function(err) {
+        if (err) { throw err; }
         user.verifyPassword('p4ssword', function(err, correct) {
           if (err) { throw err; }
           should.strictEqual(correct, true);
@@ -382,11 +249,54 @@ describe('User', function () {
       });
     });
 
-    describe('setPassword', function () {
-      // use previously created user
+    it('needs a user to exist', function(done) {
+      var user = new User(db, 'foo', 'verifyPasswordRealm');
+      user.register('secr3t', done);
+    });
 
-      it('should update the password', function(done) {
-        var user = new User(db, 'baz', 'ooregister');
+    it('should find that the password is invalid', function(done) {
+      var user = new User(db, 'foo', 'verifyPasswordRealm');
+      user.find(function(err, found){
+        if (err) { throw err; }
+        if (!found) { throw new Error('user not found'); }
+
+        user.verifyPassword('secret', function(err, correct) {
+          if (err) { throw err; }
+          should.strictEqual(correct, false);
+          done();
+        });
+      });
+    });
+
+    it('should find that the password is invalid for non-existant users', function(done) {
+      var user = new User(db, 'wer', 'verifyPasswordRealm');
+      user.find(function(err){
+        if (err) { throw err; }
+        user.verifyPassword('secr3t', function(err, valid) {
+          if (err) { throw err; }
+          should.strictEqual(valid, false);
+          done();
+        });
+      });
+    });
+
+    it('should find that the password is invalid for users in non-existant realms', function(done) {
+      var user = new User(db, 'foo', 'verifyPasswordRealm2');
+      user.verifyPassword('secr3t', function(err, valid) {
+        if (err) { throw err; }
+        should.strictEqual(valid, false);
+        done();
+      });
+    });
+  });
+
+  describe('setPassword', function () {
+    // use previously created user
+
+    it('should update the password', function(done) {
+      var user = new User(db, 'baz', 'ooregister');
+      user.find(function(err){
+        if (err) { throw err; }
         user.setPassword('secret', function(err) {
           if (err) { throw err; }
           findOne({ username: 'baz', realm: 'ooregister' }, function(err, user) {
@@ -406,21 +316,21 @@ describe('User', function () {
           });
         });
       });
+    });
 
-      it('should require that the user exists in the given realm (wrong realm)', function(done) {
-        var user = new User(db, 'baz', 'ooregister2');
-        user.setPassword('secret', function(err) {
-          should.strictEqual(err.message, 'failed to update password');
-          done();
-        });
+    it('should require that the user exists in the given realm (wrong realm)', function(done) {
+      var user = new User(db, 'baz', 'ooregister2');
+      user.setPassword('secret', function(err) {
+        should.strictEqual(err.message, 'failed to update password');
+        done();
       });
+    });
 
-      it('should require that the user exists in the given realm (wrong username)', function(done) {
-        var user = new User(db, 'foo', 'ooregister');
-        user.setPassword('secret', function(err) {
-          should.strictEqual(err.message, 'failed to update password');
-          done();
-        });
+    it('should require that the user exists in the given realm (wrong username)', function(done) {
+      var user = new User(db, 'foo', 'ooregister');
+      user.setPassword('secret', function(err) {
+        should.strictEqual(err.message, 'failed to update password');
+        done();
       });
     });
   });
