@@ -186,42 +186,6 @@ describe('User', function () {
     });
   });
 
-  describe('exists', function () {
-    // use previously created user
-    it('should find that the user does exist', function(done) {
-      var user = new User(db, 'baz', 'ooregister');
-      user.exists(function(err, doesExist) {
-        if (err) { throw err; }
-        should.strictEqual(doesExist, true);
-        done();
-      });
-    });
-
-    it('should find that the user does not exist', function(done) {
-      var user = new User(db, 'bay', 'ooregister');
-      user.find(function(err) {
-        if (err) { throw err; }
-        user.exists(function(err, doesExist) {
-          if (err) { throw err; }
-          should.strictEqual(doesExist, false);
-          done();
-        });
-      });
-    });
-
-    it('should find that the user does exist in this realm', function(done) {
-      var user = new User(db, 'baz', 'ooregister2');
-      user.find(function(err) {
-        if (err) { throw err; }
-        user.exists(function(err, doesExist) {
-          if (err) { throw err; }
-          should.strictEqual(doesExist, false);
-          done();
-        });
-      });
-    });
-  });
-
   describe('verifyPassword', function () {
     // use previously created user
 

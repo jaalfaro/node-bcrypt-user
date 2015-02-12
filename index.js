@@ -126,28 +126,6 @@ User.prototype.find = function(cb) {
 };
 
 /**
- * Return whether or not the user already exists in the database.
- *
- * @param {Function} cb  first parameter will be an error or null, second parameter
- *                       contains a boolean about whether this user exists.
- */
-User.prototype.exists = function(cb) {
-  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
-
-  var that = this;
-  var lookup = {
-    realm: that._realm,
-    username: that._username
-  };
-
-  this._db.find(lookup, function(err, user){
-    if (err) { cb(err); return; }
-    if (user) { cb(null, true); return; }
-    cb(null, false);
-  });
-};
-
-/**
  * Verify if the given password is valid.
  *
  * @param {String} password  the password to verify
@@ -217,8 +195,8 @@ User.prototype.register = function(password, cb) {
     username: that._username
   };
 
-  that.exists(function(err, doesExist) {
-    if (doesExist) { cb(new Error('username already exists')); return; }
+  that.find(function(err, found) {
+    if (found) { cb(new Error('username already exists')); return; }
 
     that._db.insert(user, function(err) {
       if (err) { cb(err); return; }

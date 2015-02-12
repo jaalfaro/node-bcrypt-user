@@ -102,12 +102,6 @@ Three functions db must support:
 
 Return a user from the database.
 
-#### user.exists(cb)
-* cb {Function} first parameter will be an error or null, second parameter
-  contains a boolean about whether this user exists or not.
-
-Return whether or not the user already exists in the database.
-
 #### user.verifyPassword(password, cb)
 * password {String} the password to verify
 * cb {Function} first parameter will be an error or null, second parameter
