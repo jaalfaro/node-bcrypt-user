@@ -82,7 +82,7 @@ module.exports = User;
  * @param {Function} cb  first parameter will be an error or null, second parameter
  *                       will be true when user is found, otherwise false.
  */
-User.prototype.find = function(cb) {
+User.prototype.find = function find(cb) {
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
   var that = this;
@@ -101,6 +101,7 @@ User.prototype.find = function(cb) {
       cb(null, true);
       return;
     }
+
     cb(null, false);
   });
 };
@@ -113,7 +114,7 @@ User.prototype.find = function(cb) {
  *                       contains a boolean about whether the password is valid or
  *                       not.
  */
-User.prototype.verifyPassword = function(password, cb) {
+User.prototype.verifyPassword = function verifyPassword(password, cb) {
   if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
@@ -123,12 +124,7 @@ User.prototype.verifyPassword = function(password, cb) {
 
     if (!found) { cb(null, false); return; }
 
-    bcrypt.compare(password, that.password, function(err, res) {
-      if (err) { cb(err); return; }
-      if (res === true) { cb(null, true); return; }
-
-      cb(null, false);
-    });
+    bcrypt.compare(password, that.password, cb);
   });
 };
 
@@ -141,7 +137,7 @@ User.prototype.verifyPassword = function(password, cb) {
  * @param {Function} cb  first parameter will be either an error object or null on
  *                       success.
  */
-User.prototype.setPassword = function(password, cb) {
+User.prototype.setPassword = function setPassword(password, cb) {
   if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
@@ -165,7 +161,7 @@ User.prototype.setPassword = function(password, cb) {
  * @param {Function} cb  first parameter will be either an error object or null on
  *                       success.
  */
-User.prototype.register = function(password, cb) {
+User.prototype.register = function register(password, cb) {
   if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
@@ -176,12 +172,14 @@ User.prototype.register = function(password, cb) {
   };
 
   that.find(function(err, found) {
+    if (err) { cb(err); return; }
+
     if (found) { cb(new Error('username already exists')); return; }
 
     that._db.insert(user, function(err) {
       if (err) { cb(err); return; }
 
-      that.setPassword(password, function(err){
+      that.setPassword(password, function(err) {
         if (err) { cb(err); return; }
 
         that.find(cb);
