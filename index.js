@@ -19,31 +19,6 @@
 var bcrypt = require('bcrypt');
 
 /**
- * Check parameters and throw if type is incorrect, or length out of bounds.
- *
- * @param {Object} db  throw if not an object
- * @param {String} username  throw if not a String
- * @param {String} password  throw if not a String
- * @param {String} realm  throw if not a String
- * @param {Function} cb  throw if not a Function
- * @return {undefined}
- */
-function _checkAllWithPassword(db, username, password, realm, cb) {
-  /*jshint maxcomplexity:11*/
-  if (typeof db !== 'object') { throw new TypeError('db must be an object'); }
-  if (typeof username !== 'string') { throw new TypeError('username must be a string'); }
-  if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
-  if (typeof realm !== 'string') { throw new TypeError('realm must be a string'); }
-  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
-
-  if (username.length < 2) { throw new Error('username must be at least 2 characters'); }
-  if (username.length > 128) { throw new Error('username can not exceed 128 characters'); }
-  if (password.length < 6) { throw new TypeError('password must be at least 6 characters'); }
-  if (realm.length < 1) { throw new Error('realm must be at least 1 character'); }
-  if (realm.length > 128) { throw new Error('realm can not exceed 128 characters'); }
-}
-
-/**
  * Create a new User object. Either for maintenance, verification or registration.
  * A user may be bound to a realm.
  *
@@ -80,7 +55,14 @@ function User(db, username, realm) {
     realm = '_default';
   }
 
-  _checkAllWithPassword(db, username, 'xxxxxx', realm, function() {});
+  if (typeof db !== 'object') { throw new TypeError('db must be an object'); }
+  if (typeof username !== 'string') { throw new TypeError('username must be a string'); }
+  if (typeof realm !== 'string') { throw new TypeError('realm must be a string'); }
+
+  if (username.length < 2) { throw new Error('username must be at least 2 characters'); }
+  if (username.length > 128) { throw new Error('username can not exceed 128 characters'); }
+  if (realm.length < 1) { throw new Error('realm must be at least 1 character'); }
+  if (realm.length > 128) { throw new Error('realm can not exceed 128 characters'); }
 
   this._db = db;
   this._realm = realm;
@@ -93,8 +75,6 @@ function User(db, username, realm) {
   };
 }
 module.exports = User;
-
-User._checkAllWithPassword = _checkAllWithPassword;
 
 /**
  * Find a user in the database.

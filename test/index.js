@@ -65,59 +65,41 @@ var db = {
 var findOne = db.find;
 
 describe('User', function () {
-  describe('_checkAllWithPassword', function () {
-    it('should require db to be an object', function() {
-      (function() { User._checkAllWithPassword(''); }).should.throw('db must be an object');
-    });
-
-    it('should require username to be a string', function() {
-      (function() { User._checkAllWithPassword(db); }).should.throw('username must be a string');
-    });
-
-    it('should require password to be a string', function() {
-      (function() { User._checkAllWithPassword(db, ''); }).should.throw('password must be a string');
-    });
-
-    it('should require realm to be a string', function() {
-      (function() { User._checkAllWithPassword(db, '', ''); }).should.throw('realm must be a string');
-    });
-
-    it('should require cb to be a function', function() {
-      (function() { User._checkAllWithPassword(db, '', '', ''); }).should.throw('cb must be a function');
-    });
-
-    it('should require username to be at least 2 characters', function() {
-      (function() { User._checkAllWithPassword(db, 'a', '', '', function() {}); }).should.throw('username must be at least 2 characters');
-    });
-
-    it('should require username to not exceed 128 characters', function() {
-      var username = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      (function() { User._checkAllWithPassword(db, username, '', '', function() {}); }).should.throw('username can not exceed 128 characters');
-    });
-
-    it('should require password to be at least 6 characters', function() {
-      (function() { User._checkAllWithPassword(db, 'foo', 'fubar', '', function() {}); }).should.throw('password must be at least 6 characters');
-    });
-
-    it('should require realm to be at least 1 character', function() {
-      (function() { User._checkAllWithPassword(db, 'foo', 'raboof', '', function() {}); }).should.throw('realm must be at least 1 character');
-    });
-
-    it('should require realm to not exceed 128 characters', function() {
-      var realm = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      (function() { User._checkAllWithPassword(db, 'foo', 'raboof', realm, function() {}); }).should.throw('realm can not exceed 128 characters');
-    });
-
-    it('should not throw', function() {
-      User._checkAllWithPassword(db, 'foo', 'raboof', 'bar', function() {});
-    });
-  });
-
   describe('constructor', function () {
     it('should require db to be an object', function() {
       (function() { var user = new User(''); return user; }).should.throw('db must be an object');
     });
-    // assume all checks are handled by the previously tested User._checkAllWithPassword
+
+    it('should require username to be a string', function() {
+      (function() { var user = new User(db); return user;}).should.throw('username must be a string');
+    });
+
+    it('should require realm to be a string', function() {
+      (function() { var user = new User(db, '', 1); return user;}).should.throw('realm must be a string');
+    });
+
+    it('should require username to be at least 2 characters', function() {
+      (function() { var user = new User(db, 'a', ''); return user;}).should.throw('username must be at least 2 characters');
+    });
+
+    it('should require username to not exceed 128 characters', function() {
+      var username = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      (function() { var user = new User(db, username, ''); return user;}).should.throw('username can not exceed 128 characters');
+    });
+
+    it('should require realm to be at least 1 character', function() {
+      (function() { var user = new User(db, 'foo', ''); return user;}).should.throw('realm must be at least 1 character');
+    });
+
+    it('should require realm to not exceed 128 characters', function() {
+      var realm = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      (function() { var user = new User(db, 'foo', realm); return user;}).should.throw('realm can not exceed 128 characters');
+    });
+
+    it('should not throw', function() {
+      var user = new User(db, 'foo', 'raboof');
+      return user;
+    });
   });
 
   describe('register', function () {
