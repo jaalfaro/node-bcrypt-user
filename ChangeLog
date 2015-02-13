@@ -1,3 +1,11 @@
+2015.02.13, Version 2.0.0
+
+* refactor api + multiple fixes
+* removed exists function (sanderbaas)
+* fixes #10: removed _checkAllWithPassword (sanderbaas)
+* fixes #7, fixes #8 removed stateless function (sanderbaas)
+
+
 2015.02.03, Version 1.0.0
 
 * update readme
