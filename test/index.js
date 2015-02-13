@@ -74,47 +74,51 @@ describe('User', function () {
       (function() { var user = new User(db); return user;}).should.throw('username must be a string');
     });
 
+    it('should require opts to be an object', function() {
+      (function() { var user = new User(db, '', 1); return user;}).should.throw('opts must be an object');
+    });
+
     it('should require realm to be a string', function() {
-      (function() { var user = new User(db, '', 1); return user;}).should.throw('realm must be a string');
+      (function() { var user = new User(db, '', { realm: 1 }); return user;}).should.throw('opts.realm must be a string');
     });
 
     it('should require username to be at least 2 characters', function() {
-      (function() { var user = new User(db, 'a', ''); return user;}).should.throw('username must be at least 2 characters');
+      (function() { var user = new User(db, 'a'); return user;}).should.throw('username must be at least 2 characters');
     });
 
     it('should require username to not exceed 128 characters', function() {
       var username = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      (function() { var user = new User(db, username, ''); return user;}).should.throw('username can not exceed 128 characters');
+      (function() { var user = new User(db, username); return user;}).should.throw('username can not exceed 128 characters');
     });
 
     it('should require realm to be at least 1 character', function() {
-      (function() { var user = new User(db, 'foo', ''); return user;}).should.throw('realm must be at least 1 character');
+      (function() { var user = new User(db, 'foo', { realm: '' }); return user;}).should.throw('opts.realm must be at least 1 character');
     });
 
     it('should require realm to not exceed 128 characters', function() {
       var realm = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      (function() { var user = new User(db, 'foo', realm); return user;}).should.throw('realm can not exceed 128 characters');
+      (function() { var user = new User(db, 'foo', { realm: realm }); return user;}).should.throw('opts.realm can not exceed 128 characters');
     });
 
     it('should not throw', function() {
-      var user = new User(db, 'foo', 'raboof');
+      var user = new User(db, 'foo', { realm: 'raboof' });
       return user;
     });
   });
 
   describe('register', function () {
-    it('should register', function(done) {
-      var user = new User(db, 'baz', 'ooregister');
+    it('should register and update object', function(done) {
+      var user = new User(db, 'baz', { realm: 'ooregister' });
       user.register('p4ssword', function(err) {
         should.strictEqual(err, null);
-        should.strictEqual(user.realm, 'ooregister');
-        should.strictEqual(user.username, 'baz');
+        should.strictEqual(user._realm, 'ooregister');
+        should.strictEqual(user._username, 'baz');
 
         // bcrypt password example: '$2a$10$VnQeImV1DVqtQ7hXa.Sgsug9cCLVa65W4jO09w.I5tXcuYRbRVevu'
-        should.strictEqual(user.password.length, 60);
-        user.password.should.match(/^\$2a\$10\$/);
+        should.strictEqual(user._password.length, 60);
+        user._password.should.match(/^\$2a\$10\$/);
 
-        bcrypt.compare('p4ssword', user.password, function(err, res) {
+        bcrypt.compare('p4ssword', user._password, function(err, res) {
           if (err) { throw err; }
           if (res !== true) { throw new Error('passwords don\'t match'); }
           done();
@@ -123,7 +127,7 @@ describe('User', function () {
     });
 
     it('should fail if username already exists', function(done) {
-      var user = new User(db, 'baz', 'ooregister');
+      var user = new User(db, 'baz', { realm: 'ooregister' });
       user.register('password', function(err, user) {
         should.strictEqual(user, undefined);
         should.strictEqual(err.message, 'username already exists');
@@ -147,22 +151,37 @@ describe('User', function () {
       user.register('password', done);
     });
 
-    it('should find the user', function(done) {
+    it('should find the user and update object', function(done) {
       var user = new User(db, 'qux');
       user.find(function(err, found) {
         if (err) { throw err; }
         should.strictEqual(found, true);
-        should.strictEqual(user.username, 'qux');
-        should.strictEqual(user.realm, '_default');
+        should.strictEqual(user._username, 'qux');
+        should.strictEqual(user._realm, '_default');
         done();
       });
     });
 
     it('should find that the user does not exist in other realm', function(done) {
-      var user = new User(db, 'qux', 'otherRealm');
+      var user = new User(db, 'qux', { realm: 'otherRealm' });
       user.find(function(err, found) {
         if (err) { throw err; }
         should.strictEqual(found, false);
+        done();
+      });
+    });
+
+    it('needs a user with an illegal key to exist', function(done) {
+      db.insert({ username: 'quux', realm: '_default', _db: false }, done);
+    });
+
+    it('should find that the user does exist but is illegal', function(done) {
+      var user = new User(db, 'quux', { hide: true });
+      user.find(function(err, found) {
+        should.strictEqual(err.message, 'object in user db contains an illegal key');
+        should.strictEqual(found, undefined);
+        should.strictEqual(user._username, 'quux');
+        should.strictEqual(user._realm, '_default');
         done();
       });
     });
@@ -172,7 +191,7 @@ describe('User', function () {
     // use previously created user
 
     it('should find that the password is invalid', function(done) {
-      var user = new User(db, 'baz', 'ooregister');
+      var user = new User(db, 'baz', { realm: 'ooregister' });
       user.find(function(err) {
         if (err) { throw err; }
         user.verifyPassword('secret', function(err, correct) {
@@ -184,7 +203,7 @@ describe('User', function () {
     });
 
     it('should find that the password is valid', function(done) {
-      var user = new User(db, 'baz', 'ooregister');
+      var user = new User(db, 'baz', { realm: 'ooregister' });
       user.find(function(err) {
         if (err) { throw err; }
         user.verifyPassword('p4ssword', function(err, correct) {
@@ -195,13 +214,13 @@ describe('User', function () {
       });
     });
 
-    it('needs a user to exist', function(done) {
-      var user = new User(db, 'foo', 'verifyPasswordRealm');
+    it('needs another user to exist', function(done) {
+      var user = new User(db, 'foo', { realm: 'verifyPasswordRealm' });
       user.register('secr3t', done);
     });
 
     it('should find that the password is invalid', function(done) {
-      var user = new User(db, 'foo', 'verifyPasswordRealm');
+      var user = new User(db, 'foo', { realm: 'verifyPasswordRealm' });
       user.find(function(err, found){
         if (err) { throw err; }
         if (!found) { throw new Error('user not found'); }
@@ -215,7 +234,7 @@ describe('User', function () {
     });
 
     it('should find that the password is invalid for non-existant users', function(done) {
-      var user = new User(db, 'wer', 'verifyPasswordRealm');
+      var user = new User(db, 'wer', { realm: 'verifyPasswordRealm' });
       user.find(function(err){
         if (err) { throw err; }
         user.verifyPassword('secr3t', function(err, valid) {
@@ -227,7 +246,7 @@ describe('User', function () {
     });
 
     it('should find that the password is invalid for users in non-existant realms', function(done) {
-      var user = new User(db, 'foo', 'verifyPasswordRealm2');
+      var user = new User(db, 'foo', { realm: 'verifyPasswordRealm2' });
       user.verifyPassword('secr3t', function(err, valid) {
         if (err) { throw err; }
         should.strictEqual(valid, false);
@@ -240,7 +259,7 @@ describe('User', function () {
     // use previously created user
 
     it('should update the password', function(done) {
-      var user = new User(db, 'baz', 'ooregister');
+      var user = new User(db, 'baz', { realm: 'ooregister' });
       user.find(function(err){
         if (err) { throw err; }
         user.setPassword('secret', function(err) {
@@ -265,7 +284,7 @@ describe('User', function () {
     });
 
     it('should require that the user exists in the given realm (wrong realm)', function(done) {
-      var user = new User(db, 'baz', 'ooregister2');
+      var user = new User(db, 'baz', { realm: 'ooregister2' });
       user.setPassword('secret', function(err) {
         should.strictEqual(err.message, 'failed to update password');
         done();
@@ -273,7 +292,7 @@ describe('User', function () {
     });
 
     it('should require that the user exists in the given realm (wrong username)', function(done) {
-      var user = new User(db, 'foo', 'ooregister');
+      var user = new User(db, 'foo', { realm: 'ooregister' });
       user.setPassword('secret', function(err) {
         should.strictEqual(err.message, 'failed to update password');
         done();

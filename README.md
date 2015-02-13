@@ -42,7 +42,7 @@ Create a new user named "foo" with the password "secr3t".
     });
 
 ### Find and verify a user
-Find a user names "foo" and verify password "raboof".
+Find a user named "foo" and verify password "raboof".
 
     // same setup as previous example
 
@@ -61,12 +61,16 @@ Find a user names "foo" and verify password "raboof".
     $ npm install bcrypt-user
 
 ## API
-### object oriented
 
-#### new User(db, username, [realm])
+### new User(db, username, [opts])
 * db {Object} resolver that implements find, updateHash and insert methods
 * username {String} the name of the user to bind this instance to
-* realm {String, default: _default} optional realm the user belongs to
+* [opts] {Object} object containing optional parameters
+
+opts:
+* realm {String, default "_default"}  optional realm the user belongs to
+* debug {Boolean, default false} whether to do extra console logging or not
+* hide {Boolean, default false} whether to suppress errors or not (for testing)
 
 Create a new User object. Either for maintenance, verification or registration.
 A user may be bound to a realm.
@@ -96,20 +100,27 @@ Three functions db must support:
       callback {Function} should call back with:
         err {Object}     error object or null
 
-#### user.find(cb)
+### user.find(cb)
 * cb {Function} first parameter will be an error or null, second parameter
   will be true when user is found, otherwise false.
 
 Return a user from the database.
 
-#### user.verifyPassword(password, cb)
+Note, the following keys are illegal and should not exist in the user db object:
+* _protectedDbKeys
+* _illegalDbKeys
+* _db
+* _debug
+* _hide
+
+### user.verifyPassword(password, cb)
 * password {String} the password to verify
 * cb {Function} first parameter will be an error or null, second parameter
   contains a boolean about whether the password is valid or not.
 
 Verify if the given password is valid.
 
-#### user.setPassword(password, cb)
+### user.setPassword(password, cb)
 * password {String} the password to use
 * cb {Function} first parameter will be either an error object or null on success.
 
@@ -117,7 +128,7 @@ Update the password.
 
 Note: the user has to exist in the database.
 
-#### user.register(password, cb)
+### user.register(password, cb)
 * password {String} the password to use, at least 6 characters
 * cb {Function} first parameter will be either an error object or null on success.
 

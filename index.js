@@ -24,7 +24,12 @@ var bcrypt = require('bcrypt');
  *
  * @param {Object} db  object that implements find, updateHash and insert methods
  * @param {String} username  the name of the user to bind this instance to
- * @param {String, default: _default} [realm]  optional realm the user belongs to
+ * @param {Object} [opts]  object containing optional parameters
+ *
+ * opts:
+ *  realm {String, default "_default"}  optional realm the user belongs to
+ *  debug {Boolean, default false} whether to do extra console logging or not
+ *  hide {Boolean, default false} whether to suppress errors or not (for testing)
  *
  * Three functions db must support:
  * find should accept: lookup, callback
@@ -50,28 +55,47 @@ var bcrypt = require('bcrypt');
  *   callback {Function} should call back with:
  *     err {Object}     error object or null
  */
-function User(db, username, realm) {
-  if (typeof realm === 'undefined') {
-    realm = '_default';
-  }
-
+function User(db, username, opts) {
   if (typeof db !== 'object') { throw new TypeError('db must be an object'); }
   if (typeof username !== 'string') { throw new TypeError('username must be a string'); }
-  if (typeof realm !== 'string') { throw new TypeError('realm must be a string'); }
+
+  opts = opts || {};
+  if (typeof opts !== 'object') { throw new TypeError('opts must be an object'); }
+
+  var realm = '_default';
+  if (typeof opts.realm !== 'undefined') {
+    if (typeof opts.realm !== 'string') { throw new TypeError('opts.realm must be a string'); }
+    realm = opts.realm;
+  }
+  if (typeof opts.debug !== 'undefined' && typeof opts.debug !== 'boolean') { throw new TypeError('opts.debug must be a boolean'); }
+  if (typeof opts.hide !== 'undefined' && typeof opts.hide !== 'boolean') { throw new TypeError('opts.hide must be a boolean'); }
 
   if (username.length < 2) { throw new Error('username must be at least 2 characters'); }
   if (username.length > 128) { throw new Error('username can not exceed 128 characters'); }
-  if (realm.length < 1) { throw new Error('realm must be at least 1 character'); }
-  if (realm.length > 128) { throw new Error('realm can not exceed 128 characters'); }
+  if (realm.length < 1) { throw new Error('opts.realm must be at least 1 character'); }
+  if (realm.length > 128) { throw new Error('opts.realm can not exceed 128 characters'); }
 
   this._db = db;
-  this._realm = realm;
   this._username = username;
+  this._realm = realm;
 
-  this.protectedProps = {
+  this._debug = opts.debug || false;
+  this._hide = opts.hide || false;
+
+  // keys that should be mapped from the user object that is stored in the user db
+  this._protectedDbKeys = {
+    realm: true,
+    username: true,
+    password: true
+  };
+
+  // keys that can not be used in the user object that is stored in the user db
+  this._illegalDbKeys = {
+    _protectedDbKeys: true,
+    _illegalDbKeys: true,
     _db: true,
-    _realm: true,
-    _username: true
+    _debug: true,
+    _hide: true
   };
 }
 module.exports = User;
@@ -85,19 +109,36 @@ module.exports = User;
 User.prototype.find = function find(cb) {
   if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
 
-  var that = this;
   var lookup = {
-    realm: that._realm,
-    username: that._username
+    realm: this._realm,
+    username: this._username
   };
 
+  var that = this;
   this._db.find(lookup, function(err, user) {
     if (err) { cb(err, false); return; }
 
     if (user) {
-      Object.keys(user).forEach(function(prop) {
-        if (!that.protectedProps[prop]) { that[prop] = user[prop]; }
+      var ok = Object.keys(user).every(function(key) {
+        if (that._illegalDbKeys[key]) {
+          if (!that._hide) { console.error('object in user db contains an illegal key: ', key, user); }
+          return false;
+        }
+
+        if (that._protectedDbKeys[key]) {
+          that['_' + key] = user[key];
+        } else {
+          that[key] = user[key];
+        }
+
+        return true;
       });
+
+      if (!ok) {
+        cb(new Error('object in user db contains an illegal key'));
+        return;
+      }
+
       cb(null, true);
       return;
     }
@@ -124,7 +165,7 @@ User.prototype.verifyPassword = function verifyPassword(password, cb) {
 
     if (!found) { cb(null, false); return; }
 
-    bcrypt.compare(password, that.password, cb);
+    bcrypt.compare(password, that._password, cb);
   });
 };
 
@@ -182,6 +223,7 @@ User.prototype.register = function register(password, cb) {
       that.setPassword(password, function(err) {
         if (err) { cb(err); return; }
 
+        // update this instance
         that.find(cb);
       });
     });
