@@ -8,7 +8,7 @@
   },
   "contributors": ["Sander Baas"],
   "license": "ISC",
-  "description": "Store and verify users with bcrypt passwords",
+  "description": "Abstract library to create, update and authenticate users using bcrypt",
   "keywords": [
     "bcrypt",
     "user",
