@@ -1,9 +1,9 @@
-# bcrypt-user
+# bcryptjs-user
 
 Abstract library to create, update and authenticate users using bcrypt.
 
 Use this module to implement a user account module that uses bcrypt passwords with
-your own storage engine. See `mongo-bcrypt-user` and `array-bcrypt-user` for two
+your own storage engine. See `mongo-bcryptjs-user` and `array-bcrypt-user` for two
 real world implementations.
 
 ## Example
@@ -13,7 +13,7 @@ Note, this example is based on `array-bcrypt-user` and uses the `match` npm.
 
     var util = require('util');
 
-    var BcryptUser = require('bcrypt-user');
+    var BcryptUser = require('bcryptjs-user');
     var async = require('async');
     var match = require('match-object');
 
@@ -136,7 +136,7 @@ Check if the password "secr3t" is correct for user "foo".
 
 ## Installation
 
-    $ npm install bcrypt-user
+    $ npm install bcryptjs-user
 
 ## API
 
@@ -220,6 +220,7 @@ Register a new user with a certain password. This method should be implemented.
 
 ISC
 
+Copyright (c) 2017 John Alfaro
 Copyright (c) 2014, 2015 Tim Kuijsten
 
 Permission to use, copy, modify, and/or distribute this software for any
