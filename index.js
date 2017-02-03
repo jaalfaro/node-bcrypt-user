@@ -16,7 +16,7 @@
 
 'use strict';
 
-var bcrypt = require('bcrypt');
+var bcrypt = require('bcryptjs');
 
 /**
  * Create a new User object. Either for maintenance, verification or registration.
@@ -56,47 +56,67 @@ var bcrypt = require('bcrypt');
  *     err {Object}     error object or null
  */
 function User(db, username, opts) {
-  if (typeof db !== 'object') { throw new TypeError('db must be an object'); }
-  if (typeof username !== 'string') { throw new TypeError('username must be a string'); }
+    if (typeof db !== 'object') {
+        throw new TypeError('db must be an object');
+    }
+    if (typeof username !== 'string') {
+        throw new TypeError('username must be a string');
+    }
 
-  opts = opts || {};
-  if (typeof opts !== 'object') { throw new TypeError('opts must be an object'); }
+    opts = opts || {};
+    if (typeof opts !== 'object') {
+        throw new TypeError('opts must be an object');
+    }
 
-  var realm = '_default';
-  if (typeof opts.realm !== 'undefined') {
-    if (typeof opts.realm !== 'string') { throw new TypeError('opts.realm must be a string'); }
-    realm = opts.realm;
-  }
-  if (typeof opts.debug !== 'undefined' && typeof opts.debug !== 'boolean') { throw new TypeError('opts.debug must be a boolean'); }
-  if (typeof opts.hide !== 'undefined' && typeof opts.hide !== 'boolean') { throw new TypeError('opts.hide must be a boolean'); }
+    var realm = '_default';
+    if (typeof opts.realm !== 'undefined') {
+        if (typeof opts.realm !== 'string') {
+            throw new TypeError('opts.realm must be a string');
+        }
+        realm = opts.realm;
+    }
+    if (typeof opts.debug !== 'undefined' && typeof opts.debug !== 'boolean') {
+        throw new TypeError('opts.debug must be a boolean');
+    }
+    if (typeof opts.hide !== 'undefined' && typeof opts.hide !== 'boolean') {
+        throw new TypeError('opts.hide must be a boolean');
+    }
 
-  if (username.length < 2) { throw new Error('username must be at least 2 characters'); }
-  if (username.length > 128) { throw new Error('username can not exceed 128 characters'); }
-  if (realm.length < 1) { throw new Error('opts.realm must be at least 1 character'); }
-  if (realm.length > 128) { throw new Error('opts.realm can not exceed 128 characters'); }
+    if (username.length < 2) {
+        throw new Error('username must be at least 2 characters');
+    }
+    if (username.length > 128) {
+        throw new Error('username can not exceed 128 characters');
+    }
+    if (realm.length < 1) {
+        throw new Error('opts.realm must be at least 1 character');
+    }
+    if (realm.length > 128) {
+        throw new Error('opts.realm can not exceed 128 characters');
+    }
 
-  this._db = db;
-  this._username = username;
-  this._realm = realm;
+    this._db = db;
+    this._username = username;
+    this._realm = realm;
 
-  this._debug = opts.debug || false;
-  this._hide = opts.hide || false;
+    this._debug = opts.debug || false;
+    this._hide = opts.hide || false;
 
-  // keys that should be mapped from the user object that is stored in the user db
-  this._protectedDbKeys = {
-    realm: true,
-    username: true,
-    password: true
-  };
+    // keys that should be mapped from the user object that is stored in the user db
+    this._protectedDbKeys = {
+        realm: true,
+        username: true,
+        password: true
+    };
 
-  // keys that can not be used in the user object that is stored in the user db
-  this._illegalDbKeys = {
-    _protectedDbKeys: true,
-    _illegalDbKeys: true,
-    _db: true,
-    _debug: true,
-    _hide: true
-  };
+    // keys that can not be used in the user object that is stored in the user db
+    this._illegalDbKeys = {
+        _protectedDbKeys: true,
+        _illegalDbKeys: true,
+        _db: true,
+        _debug: true,
+        _hide: true
+    };
 }
 module.exports = User;
 
@@ -107,44 +127,51 @@ module.exports = User;
  *                       will be true when user is found, otherwise false.
  */
 User.prototype.find = function find(cb) {
-  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
-
-  var lookup = {
-    realm: this._realm,
-    username: this._username
-  };
-
-  var that = this;
-  this._db.find(lookup, function(err, user) {
-    if (err) { cb(err, false); return; }
-
-    if (user) {
-      var ok = Object.keys(user).every(function(key) {
-        if (that._illegalDbKeys[key]) {
-          if (!that._hide) { console.error('object in user db contains an illegal key: ', key, user); }
-          return false;
-        }
-
-        if (that._protectedDbKeys[key]) {
-          that['_' + key] = user[key];
-        } else {
-          that[key] = user[key];
-        }
-
-        return true;
-      });
-
-      if (!ok) {
-        cb(new Error('object in user db contains an illegal key'));
-        return;
-      }
-
-      cb(null, true);
-      return;
+    if (typeof cb !== 'function') {
+        throw new TypeError('cb must be a function');
     }
 
-    cb(null, false);
-  });
+    var lookup = {
+        realm: this._realm,
+        username: this._username
+    };
+
+    var that = this;
+    this._db.find(lookup, function (err, user) {
+        if (err) {
+            cb(err, false);
+            return;
+        }
+
+        if (user) {
+            var ok = Object.keys(user).every(function (key) {
+                if (that._illegalDbKeys[key]) {
+                    if (!that._hide) {
+                        console.error('object in user db contains an illegal key: ', key, user);
+                    }
+                    return false;
+                }
+
+                if (that._protectedDbKeys[key]) {
+                    that['_' + key] = user[key];
+                } else {
+                    that[key] = user[key];
+                }
+
+                return true;
+            });
+
+            if (!ok) {
+                cb(new Error('object in user db contains an illegal key'));
+                return;
+            }
+
+            cb(null, true);
+            return;
+        }
+
+        cb(null, false);
+    });
 };
 
 /**
@@ -156,17 +183,27 @@ User.prototype.find = function find(cb) {
  *                       not.
  */
 User.prototype.verifyPassword = function verifyPassword(password, cb) {
-  if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
-  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
+    if (typeof password !== 'string') {
+        throw new TypeError('password must be a string');
+    }
+    if (typeof cb !== 'function') {
+        throw new TypeError('cb must be a function');
+    }
 
-  var that = this;
-  that.find(function(err, found) {
-    if (err) { cb(err); return; }
+    var that = this;
+    that.find(function (err, found) {
+        if (err) {
+            cb(err);
+            return;
+        }
 
-    if (!found) { cb(null, false); return; }
+        if (!found) {
+            cb(null, false);
+            return;
+        }
 
-    bcrypt.compare(password, that._password, cb);
-  });
+        bcrypt.compare(password, that._password, cb);
+    });
 };
 
 /**
@@ -179,20 +216,27 @@ User.prototype.verifyPassword = function verifyPassword(password, cb) {
  *                       success.
  */
 User.prototype.setPassword = function setPassword(password, cb) {
-  if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
-  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
+    if (typeof password !== 'string') {
+        throw new TypeError('password must be a string');
+    }
+    if (typeof cb !== 'function') {
+        throw new TypeError('cb must be a function');
+    }
 
-  var that = this;
-  bcrypt.hash(password, 10, function(err, hash) {
-    if (err) { cb(err); return; }
+    var that = this;
+    bcrypt.hash(password, 10, function (err, hash) {
+        if (err) {
+            cb(err);
+            return;
+        }
 
-    var lookup = {
-      realm: that._realm,
-      username: that._username
-    };
+        var lookup = {
+            realm: that._realm,
+            username: that._username
+        };
 
-    that._db.updateHash(lookup, hash, cb);
-  });
+        that._db.updateHash(lookup, hash, cb);
+    });
 };
 
 /**
@@ -203,29 +247,45 @@ User.prototype.setPassword = function setPassword(password, cb) {
  *                       success.
  */
 User.prototype.register = function register(password, cb) {
-  if (typeof password !== 'string') { throw new TypeError('password must be a string'); }
-  if (typeof cb !== 'function') { throw new TypeError('cb must be a function'); }
+    if (typeof password !== 'string') {
+        throw new TypeError('password must be a string');
+    }
+    if (typeof cb !== 'function') {
+        throw new TypeError('cb must be a function');
+    }
 
-  var that = this;
-  var user = {
-    realm: that._realm,
-    username: that._username
-  };
+    var that = this;
+    var user = {
+        realm: that._realm,
+        username: that._username
+    };
 
-  that.find(function(err, found) {
-    if (err) { cb(err); return; }
+    that.find(function (err, found) {
+        if (err) {
+            cb(err);
+            return;
+        }
 
-    if (found) { cb(new Error('username already exists')); return; }
+        if (found) {
+            cb(new Error('username already exists'));
+            return;
+        }
 
-    that._db.insert(user, function(err) {
-      if (err) { cb(err); return; }
+        that._db.insert(user, function (err) {
+            if (err) {
+                cb(err);
+                return;
+            }
 
-      that.setPassword(password, function(err) {
-        if (err) { cb(err); return; }
+            that.setPassword(password, function (err) {
+                if (err) {
+                    cb(err);
+                    return;
+                }
 
-        // update this instance
-        that.find(cb);
-      });
+                // update this instance
+                that.find(cb);
+            });
+        });
     });
-  });
 };

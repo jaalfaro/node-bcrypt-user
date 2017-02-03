@@ -19,7 +19,7 @@
 /*jshint -W068 */
 
 var should = require('should');
-var bcrypt = require('bcrypt');
+var bcrypt = require('bcryptjs');
 var async = require('async');
 
 var User = require('../index');
